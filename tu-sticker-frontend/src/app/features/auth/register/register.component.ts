@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
@@ -31,7 +31,7 @@ import { AuthService } from '../../../core/services/auth.service';
         <button type="submit" [disabled]="form.invalid || loading">{{ loading ? 'Creando…' : 'Registrarme' }}</button>
 
         <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
-        <p class="muted">¿Ya tienes cuenta? <a routerLink="/login">Inicia sesión</a></p>
+        <p class="muted">¿Ya tienes cuenta? <a routerLink="/login" [queryParams]="returnUrl !== '/shop' ? { returnUrl } : null">Inicia sesión</a></p>
       </form>
     </section>
   `,
@@ -51,6 +51,7 @@ import { AuthService } from '../../../core/services/auth.service';
 })
 export class RegisterComponent {
     readonly form;
+    readonly returnUrl: string;
 
     loading = false;
     errorMessage = '';
@@ -59,7 +60,9 @@ export class RegisterComponent {
         private readonly fb: FormBuilder,
         private readonly authService: AuthService,
         private readonly router: Router,
+        private readonly route: ActivatedRoute,
     ) {
+        this.returnUrl = this.getReturnUrl();
         this.form = this.fb.nonNullable.group({
             name: ['', [Validators.required]],
             email: ['', [Validators.required, Validators.email]],
@@ -78,14 +81,19 @@ export class RegisterComponent {
         this.errorMessage = '';
 
         this.authService.register(this.form.getRawValue()).subscribe({
-            next: () => this.router.navigate(['/shop']),
+            next: () => this.router.navigateByUrl(this.returnUrl),
             error: () => {
                 this.loading = false;
-                this.errorMessage = 'No se pudo crear la cuenta. Inténtalo nuevamente.';
+                this.errorMessage = 'No se pudo crear la cuenta o recuperar tu carrito. Inténtalo nuevamente.';
             },
             complete: () => {
                 this.loading = false;
             },
         });
+    }
+
+    private getReturnUrl(): string {
+        const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+        return returnUrl?.startsWith('/') && !returnUrl.startsWith('//') ? returnUrl : '/shop';
     }
 }

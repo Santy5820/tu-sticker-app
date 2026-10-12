@@ -4,6 +4,7 @@ import { roleGuard } from './core/guards/role.guard';
 import { LoginComponent } from './features/auth/login/login.component';
 import { RegisterComponent } from './features/auth/register/register.component';
 import { CartPageComponent } from './features/cart/cart-page/cart-page.component';
+import { CategoriesAdminComponent } from './features/admin/categories/categories-admin.component';
 import { AdminDashboardComponent } from './features/admin/dashboard/dashboard.component';
 import { OrdersAdminComponent } from './features/admin/orders/orders-admin.component';
 import { ProductsAdminComponent } from './features/admin/products/products-admin.component';
@@ -25,22 +26,18 @@ export const routes: Routes = [
     {
         path: 'shop',
         component: ShopHomeComponent,
-        canActivate: [authGuard],
     },
     {
         path: 'products',
         component: ProductListComponent,
-        canActivate: [authGuard],
     },
     {
         path: 'products/:id',
         component: ProductDetailComponent,
-        canActivate: [authGuard],
     },
     {
         path: 'cart',
         component: CartPageComponent,
-        canActivate: [authGuard],
     },
     {
         path: 'orders',
@@ -54,6 +51,7 @@ export const routes: Routes = [
         children: [
             { path: '', component: AdminDashboardComponent },
             { path: 'products', component: ProductsAdminComponent },
+            { path: 'categories', component: CategoriesAdminComponent },
             { path: 'orders', component: OrdersAdminComponent },
             { path: 'users', component: UsersAdminComponent },
         ],

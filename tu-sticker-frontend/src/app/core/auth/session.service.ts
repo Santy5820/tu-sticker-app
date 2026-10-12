@@ -6,6 +6,7 @@ import { AuthResponse, UserPublic } from '../models/api';
 export class SessionService {
     private readonly tokenKey = 'tu-sticker-token';
     private readonly userKey = 'tu-sticker-user';
+    private readonly cartIdKey = 'tu-sticker-cart-id';
     private readonly userSubject = new BehaviorSubject<UserPublic | null>(this.readUser());
 
     readonly user$ = this.userSubject.asObservable();
@@ -18,6 +19,18 @@ export class SessionService {
 
     getToken(): string | null {
         return localStorage.getItem(this.tokenKey);
+    }
+
+    getCartId(): string | null {
+        return localStorage.getItem(this.cartIdKey);
+    }
+
+    setCartId(cartId: string): void {
+        localStorage.setItem(this.cartIdKey, cartId);
+    }
+
+    clearCartId(): void {
+        localStorage.removeItem(this.cartIdKey);
     }
 
     getCurrentUser(): UserPublic | null {

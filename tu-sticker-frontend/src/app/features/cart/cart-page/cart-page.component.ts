@@ -1,14 +1,15 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { Cart } from '../../../core/models/api';
+import { AuthService } from '../../../core/services/auth.service';
 import { CartService } from '../../../core/services/cart.service';
 import { OrderService } from '../../../core/services/order.service';
 
 @Component({
     selector: 'app-cart-page',
     standalone: true,
-    imports: [CommonModule],
+    imports: [CommonModule, RouterLink],
     template: `
     <section class="page">
       <h1>Carrito</h1>
@@ -28,7 +29,15 @@ import { OrderService } from '../../../core/services/order.service';
           <h2>Resumen</h2>
           <div class="row"><span>Subtotal</span><strong>{{ cart.subtotal | currency:'COP':'symbol-narrow':'1.0-0' }}</strong></div>
           <div class="row"><span>Total</span><strong>{{ cart.total | currency:'COP':'symbol-narrow':'1.0-0' }}</strong></div>
-          <button type="button" (click)="checkout()">Confirmar pedido</button>
+          <ng-container *ngIf="authService.isAuthenticated(); else accountRequired">
+            <button type="button" (click)="checkout()">Confirmar pedido</button>
+          </ng-container>
+
+          <ng-template #accountRequired>
+            <p>Para procesar tu pedido, inicia sesión o crea una cuenta.</p>
+            <a [routerLink]="['/login']" [queryParams]="{ returnUrl: '/cart' }">Iniciar sesión</a>
+            <a [routerLink]="['/register']" [queryParams]="{ returnUrl: '/cart' }">Crear cuenta</a>
+          </ng-template>
         </aside>
       </div>
 
@@ -47,6 +56,7 @@ export class CartPageComponent implements OnInit {
         private readonly cartService: CartService,
         private readonly orderService: OrderService,
         private readonly router: Router,
+        public readonly authService: AuthService,
     ) { }
 
     ngOnInit(): void {
@@ -56,6 +66,11 @@ export class CartPageComponent implements OnInit {
     }
 
     checkout(): void {
+        if (!this.authService.isAuthenticated()) {
+            this.router.navigate(['/login'], { queryParams: { returnUrl: '/cart' } });
+            return;
+        }
+
         this.orderService.create({}).subscribe(() => {
             this.router.navigate(['/orders']);
         });

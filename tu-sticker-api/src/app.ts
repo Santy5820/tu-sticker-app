@@ -12,7 +12,7 @@ export const app = express();
 
 app.use(express.json());
 app.use(validateRequestBody);
-app.use(cors());
+app.use(cors({ exposedHeaders: ["X-Cart-Id"] }));
 app.use(compression());
 app.use(helmet());
 app.use(morgan("dev"));

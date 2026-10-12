@@ -12,6 +12,7 @@ import { RouterLink } from '@angular/router';
 
       <div class="cards">
         <a routerLink="/admin/products" class="card">Productos</a>
+        <a routerLink="/admin/categories" class="card">Categorías</a>
         <a routerLink="/admin/orders" class="card">Pedidos</a>
         <a routerLink="/admin/users" class="card">Usuarios</a>
       </div>

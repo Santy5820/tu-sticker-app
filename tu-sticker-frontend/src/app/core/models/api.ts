@@ -49,6 +49,30 @@ export interface Product {
     updatedAt?: string;
 }
 
+export interface ProductCreateRequest {
+    name: string;
+    description: string;
+    price: number;
+    category: string;
+    isCustomizable: boolean;
+}
+
+export interface Category {
+    _id: string;
+    name: string;
+    slug: string;
+    description?: string;
+    isActive: boolean;
+    createdAt?: string;
+    updatedAt?: string;
+}
+
+export interface CategoryWriteRequest {
+    name: string;
+    description?: string;
+    isActive?: boolean;
+}
+
 export interface CartItem {
     productId: string;
     productName: string;

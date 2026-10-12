@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
@@ -26,7 +26,7 @@ import { AuthService } from '../../../core/services/auth.service';
         <button type="submit" [disabled]="form.invalid || loading">{{ loading ? 'Ingresando…' : 'Entrar' }}</button>
 
         <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
-        <p class="muted">¿No tienes cuenta? <a routerLink="/register">Crear una</a></p>
+        <p class="muted">¿No tienes cuenta? <a routerLink="/register" [queryParams]="returnUrl !== '/shop' ? { returnUrl } : null">Crear una</a></p>
       </form>
     </section>
   `,
@@ -46,6 +46,7 @@ import { AuthService } from '../../../core/services/auth.service';
 })
 export class LoginComponent {
     readonly form;
+    readonly returnUrl: string;
 
     loading = false;
     errorMessage = '';
@@ -54,7 +55,9 @@ export class LoginComponent {
         private readonly fb: FormBuilder,
         private readonly authService: AuthService,
         private readonly router: Router,
+        private readonly route: ActivatedRoute,
     ) {
+        this.returnUrl = this.getReturnUrl();
         this.form = this.fb.nonNullable.group({
             email: ['', [Validators.required, Validators.email]],
             password: ['', [Validators.required]],
@@ -71,14 +74,19 @@ export class LoginComponent {
         this.errorMessage = '';
 
         this.authService.login(this.form.getRawValue()).subscribe({
-            next: () => this.router.navigate(['/shop']),
+            next: () => this.router.navigateByUrl(this.returnUrl),
             error: () => {
                 this.loading = false;
-                this.errorMessage = 'No se pudo iniciar sesión. Verifica tus credenciales.';
+                this.errorMessage = 'No se pudo iniciar sesión o recuperar tu carrito. Verifica tus credenciales e inténtalo nuevamente.';
             },
             complete: () => {
                 this.loading = false;
             },
         });
+    }
+
+    private getReturnUrl(): string {
+        const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+        return returnUrl?.startsWith('/') && !returnUrl.startsWith('//') ? returnUrl : '/shop';
     }
 }
