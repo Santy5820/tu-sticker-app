@@ -314,9 +314,28 @@ export const swaggerSpec = swaggerJsdoc({
                         description: { type: "string" },
                         price: { type: "number", format: "double" },
                         category: { type: "string" },
-                        images: { type: "array", items: { type: "string" } },
+                        images: { type: "array", maxItems: 8, items: { type: "string", format: "uri" } },
                         isActive: { type: "boolean" },
                         isCustomizable: { type: "boolean" },
+                        customizationSelectionMode: {
+                            type: "string",
+                            enum: ["single", "multiple"],
+                            default: "multiple",
+                            description: "Define si el cliente puede elegir una opción excluyente o combinar varias",
+                        },
+                        customizations: {
+                            type: "array",
+                            items: {
+                                type: "object",
+                                required: ["name", "value", "inputType", "required"],
+                                properties: {
+                                    name: { type: "string" },
+                                    value: { type: "number", minimum: 0, description: "Incremento de precio en COP" },
+                                    inputType: { type: "string", enum: ["none", "text", "file"], description: "Dato solicitado al cliente: ninguno, texto o archivo" },
+                                    required: { type: "boolean", description: "Indica si el dato u opción es obligatorio" },
+                                },
+                            },
+                        },
                         inventoryManaged: { type: "boolean" },
                         stock: { type: "number", nullable: true },
                         stockAlertThreshold: { type: "number" },
@@ -333,9 +352,28 @@ export const swaggerSpec = swaggerJsdoc({
                         description: { type: "string" },
                         price: { type: "number", minimum: 0 },
                         category: { type: "string" },
-                        images: { type: "array", items: { type: "string" } },
+                        images: { type: "array", maxItems: 8, items: { type: "string", format: "uri" } },
                         isActive: { type: "boolean", default: true },
                         isCustomizable: { type: "boolean", default: false },
+                        customizationSelectionMode: {
+                            type: "string",
+                            enum: ["single", "multiple"],
+                            default: "multiple",
+                            description: "Define si el cliente puede elegir una opción excluyente o combinar varias",
+                        },
+                        customizations: {
+                            type: "array",
+                            items: {
+                                type: "object",
+                                required: ["name", "value", "inputType", "required"],
+                                properties: {
+                                    name: { type: "string" },
+                                    value: { type: "number", minimum: 0 },
+                                    inputType: { type: "string", enum: ["none", "text", "file"], description: "Dato solicitado al cliente: ninguno, texto o archivo" },
+                                    required: { type: "boolean", description: "Indica si el dato u opción es obligatorio" },
+                                },
+                            },
+                        },
                         inventoryManaged: { type: "boolean", default: false },
                         stock: { type: "number" },
                         stockAlertThreshold: { type: "number", minimum: 0 },
@@ -365,9 +403,27 @@ export const swaggerSpec = swaggerJsdoc({
                         description: { type: "string" },
                         price: { type: "number", minimum: 0 },
                         category: { type: "string" },
-                        images: { type: "array", items: { type: "string" } },
+                        images: { type: "array", maxItems: 8, items: { type: "string", format: "uri" } },
                         isActive: { type: "boolean" },
                         isCustomizable: { type: "boolean" },
+                        customizationSelectionMode: {
+                            type: "string",
+                            enum: ["single", "multiple"],
+                            description: "Define si el cliente puede elegir una opción excluyente o combinar varias",
+                        },
+                        customizations: {
+                            type: "array",
+                            items: {
+                                type: "object",
+                                required: ["name", "value", "inputType", "required"],
+                                properties: {
+                                    name: { type: "string" },
+                                    value: { type: "number", minimum: 0 },
+                                    inputType: { type: "string", enum: ["none", "text", "file"], description: "Dato solicitado al cliente: ninguno, texto o archivo" },
+                                    required: { type: "boolean", description: "Indica si el dato u opción es obligatorio" },
+                                },
+                            },
+                        },
                         inventoryManaged: { type: "boolean" },
                         stock: { type: "number" },
                         stockAlertThreshold: { type: "number", minimum: 0 },
@@ -1125,6 +1181,52 @@ export const swaggerSpec = swaggerJsdoc({
                     },
                 },
             },
+            "/api/v1/products/images": {
+                post: {
+                    tags: ["Products"],
+                    summary: "Subir imágenes de producto",
+                    security: [{ bearerAuth: [] }],
+                    description: "Requiere JWT con rol ADMIN. Acepta hasta 8 imágenes JPG, PNG, WEBP o GIF de máximo 8 MB cada una. Los archivos quedan disponibles públicamente bajo /uploads/products.",
+                    requestBody: {
+                        required: true,
+                        content: {
+                            "multipart/form-data": {
+                                schema: {
+                                    type: "object",
+                                    required: ["images"],
+                                    properties: {
+                                        images: {
+                                            type: "array",
+                                            maxItems: 8,
+                                            items: { type: "string", format: "binary" },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    responses: {
+                        "201": {
+                            description: "Imágenes almacenadas",
+                            content: {
+                                "application/json": {
+                                    schema: {
+                                        type: "object",
+                                        required: ["images"],
+                                        properties: {
+                                            images: { type: "array", maxItems: 8, items: { type: "string", format: "uri" } },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                        "400": errorResponse,
+                        "401": errorResponse,
+                        "403": errorResponse,
+                        "500": errorResponse,
+                    },
+                },
+            },
             "/api/v1/products/category/{category}": {
                 get: {
                     tags: ["Products"],
@@ -1137,11 +1239,23 @@ export const swaggerSpec = swaggerJsdoc({
                     },
                 },
             },
+            "/api/v1/products/slug/{slug}": {
+                get: {
+                    tags: ["Products"],
+                    summary: "Obtener producto por slug",
+                    parameters: [{ in: "path", name: "slug", required: true, schema: { type: "string" } }],
+                    responses: {
+                        "200": { description: "Producto encontrado", content: { "application/json": { schema: { $ref: "#/components/schemas/Product" } } } },
+                        "404": errorResponse,
+                        "500": errorResponse,
+                    },
+                },
+            },
             "/api/v1/products/{id}": {
                 get: {
                     tags: ["Products"],
-                    summary: "Obtener producto por ID",
-                    parameters: [{ in: "path", name: "id", required: true, schema: { type: "string" }, description: "ObjectId de MongoDB" }],
+                    summary: "Obtener producto por ID o slug",
+                    parameters: [{ in: "path", name: "id", required: true, schema: { type: "string" }, description: "ObjectId de MongoDB o slug del producto" }],
                     responses: {
                         "200": { description: "Producto encontrado", content: { "application/json": { schema: { $ref: "#/components/schemas/Product" } } } },
                         "404": errorResponse,
@@ -1152,7 +1266,7 @@ export const swaggerSpec = swaggerJsdoc({
                     tags: ["Products"],
                     summary: "Actualizar producto",
                     security: [{ bearerAuth: [] }],
-                    description: "Requiere JWT con rol ADMIN, DESIGNER o PRODUCTION.",
+                    description: "Requiere JWT con rol ADMIN.",
                     parameters: [{ in: "path", name: "id", required: true, schema: { type: "string" }, description: "ObjectId de MongoDB" }],
                     requestBody: {
                         required: true,

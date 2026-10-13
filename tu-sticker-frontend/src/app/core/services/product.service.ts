@@ -18,6 +18,10 @@ export class ProductService {
         return this.http.get<Product>(`${this.apiUrl}/${id}`);
     }
 
+    getBySlug(slug: string): Observable<Product> {
+        return this.http.get<Product>(`${this.apiUrl}/slug/${encodeURIComponent(slug)}`);
+    }
+
     getByCategory(category: string): Observable<Product[]> {
         return this.http.get<Product[]>(`${this.apiUrl}/category/${category}`);
     }

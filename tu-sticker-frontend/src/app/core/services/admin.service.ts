@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { Category, CategoryWriteRequest, Product, ProductCreateRequest } from '../models/api';
+import { Category, CategoryWriteRequest, Product, ProductCreateRequest, ProductImageUploadResponse, ProductUpdateRequest } from '../models/api';
 
 @Injectable({ providedIn: 'root' })
 export class AdminService {
@@ -32,6 +32,20 @@ export class AdminService {
 
     updateCategory(id: string, category: Partial<CategoryWriteRequest>): Observable<Category> {
         return this.http.patch<Category>(`${this.apiUrl}/categories/${id}`, category);
+    }
+
+    getProductBySlug(slug: string): Observable<Product> {
+        return this.http.get<Product>(`${this.apiUrl}/products/slug/${encodeURIComponent(slug)}`);
+    }
+
+    uploadProductImages(files: File[]): Observable<ProductImageUploadResponse> {
+        const formData = new FormData();
+        files.forEach((file) => formData.append('images', file, file.name));
+        return this.http.post<ProductImageUploadResponse>(`${this.apiUrl}/products/images`, formData);
+    }
+
+    updateProduct(id: string, product: ProductUpdateRequest): Observable<Product> {
+        return this.http.patch<Product>(`${this.apiUrl}/products/${id}`, product);
     }
 
     deactivateCategory(id: string): Observable<void> {

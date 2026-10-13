@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ProductService } from '../../../core/services/product.service';
 import { Product } from '../../../core/models/api';
@@ -32,7 +32,7 @@ import { Product } from '../../../core/models/api';
             <p>{{ product.description }}</p>
             <div class="meta">
               <strong>{{ product.price | currency:'COP':'symbol-narrow':'1.0-0' }}</strong>
-              <a [routerLink]="['/products', product._id]">Ver detalle</a>
+              <a [routerLink]="['/products', product.slug]">Ver detalle</a>
             </div>
           </div>
         </article>
@@ -68,11 +68,15 @@ import { Product } from '../../../core/models/api';
 export class ShopHomeComponent implements OnInit {
     products: Product[] = [];
 
-    constructor(private readonly productService: ProductService) { }
+    constructor(
+        private readonly productService: ProductService,
+        private readonly changeDetector: ChangeDetectorRef,
+    ) { }
 
     ngOnInit(): void {
         this.productService.list().subscribe((products) => {
             this.products = products.slice(0, 6);
+            this.changeDetector.markForCheck();
         });
     }
 }

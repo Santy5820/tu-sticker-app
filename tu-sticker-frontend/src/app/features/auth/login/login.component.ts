@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { ChangeDetectorRef, Component } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
@@ -56,6 +56,7 @@ export class LoginComponent {
         private readonly authService: AuthService,
         private readonly router: Router,
         private readonly route: ActivatedRoute,
+        private readonly changeDetector: ChangeDetectorRef,
     ) {
         this.returnUrl = this.getReturnUrl();
         this.form = this.fb.nonNullable.group({
@@ -78,9 +79,11 @@ export class LoginComponent {
             error: () => {
                 this.loading = false;
                 this.errorMessage = 'No se pudo iniciar sesión o recuperar tu carrito. Verifica tus credenciales e inténtalo nuevamente.';
+                this.changeDetector.markForCheck();
             },
             complete: () => {
                 this.loading = false;
+                this.changeDetector.markForCheck();
             },
         });
     }

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Category } from '../../../core/models/api';
 import { AdminService } from '../../../core/services/admin.service';
@@ -160,7 +160,10 @@ export class CategoriesAdminComponent implements OnInit {
     editingCategory: Category | null = null;
     draft = this.emptyDraft();
 
-    constructor(private readonly adminService: AdminService) { }
+    constructor(
+        private readonly adminService: AdminService,
+        private readonly changeDetector: ChangeDetectorRef,
+    ) { }
 
     ngOnInit(): void {
         this.loadCategories();
@@ -224,10 +227,12 @@ export class CategoriesAdminComponent implements OnInit {
                 this.showForm = false;
                 this.editingCategory = null;
                 this.saving = false;
+                this.changeDetector.markForCheck();
             },
             error: () => {
                 this.formError = 'No se pudo guardar la categoría. Verifica el nombre y vuelve a intentarlo.';
                 this.saving = false;
+                this.changeDetector.markForCheck();
             },
         });
     }
@@ -239,10 +244,14 @@ export class CategoriesAdminComponent implements OnInit {
 
         this.busyCategoryId = category._id;
         this.adminService.deactivateCategory(category._id).subscribe({
-            next: () => this.setCategoryActive(category, false),
+            next: () => {
+                this.setCategoryActive(category, false);
+                this.changeDetector.markForCheck();
+            },
             error: () => {
                 this.loadError = 'No se pudo desactivar la categoría. Intenta nuevamente.';
                 this.busyCategoryId = null;
+                this.changeDetector.markForCheck();
             },
         });
     }
@@ -250,10 +259,14 @@ export class CategoriesAdminComponent implements OnInit {
     reactivateCategory(category: Category): void {
         this.busyCategoryId = category._id;
         this.adminService.updateCategory(category._id, { isActive: true }).subscribe({
-            next: (updatedCategory) => this.replaceCategory(updatedCategory),
+            next: (updatedCategory) => {
+                this.replaceCategory(updatedCategory);
+                this.changeDetector.markForCheck();
+            },
             error: () => {
                 this.loadError = 'No se pudo reactivar la categoría. Intenta nuevamente.';
                 this.busyCategoryId = null;
+                this.changeDetector.markForCheck();
             },
         });
     }
@@ -265,10 +278,12 @@ export class CategoriesAdminComponent implements OnInit {
             next: (categories) => {
                 this.categories = categories;
                 this.loading = false;
+                this.changeDetector.markForCheck();
             },
             error: () => {
                 this.loadError = 'No se pudieron cargar las categorías. Verifica tu sesión e intenta nuevamente.';
                 this.loading = false;
+                this.changeDetector.markForCheck();
             },
         });
     }

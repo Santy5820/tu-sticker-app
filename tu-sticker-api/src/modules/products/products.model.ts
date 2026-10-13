@@ -1,5 +1,15 @@
 import { ObjectId } from "mongodb";
 
+export type ProductCustomizationInputType = "none" | "text" | "file";
+export type ProductCustomizationSelectionMode = "single" | "multiple";
+
+export interface ProductCustomization {
+    name: string;
+    value: number;
+    inputType: ProductCustomizationInputType;
+    required: boolean;
+}
+
 export interface Product {
     _id?: ObjectId;
     name: string;
@@ -10,6 +20,8 @@ export interface Product {
     images: string[];
     isActive: boolean;
     isCustomizable: boolean;
+    customizationSelectionMode?: ProductCustomizationSelectionMode;
+    customizations?: ProductCustomization[];
     inventoryManaged?: boolean;
     stock?: number;
     stockAlertThreshold?: number;
@@ -26,6 +38,8 @@ export interface ProductCreateInput {
     images?: string[];
     isActive?: boolean;
     isCustomizable?: boolean;
+    customizationSelectionMode?: ProductCustomizationSelectionMode;
+    customizations?: ProductCustomization[];
     inventoryManaged?: boolean;
     stock?: number;
     stockAlertThreshold?: number;

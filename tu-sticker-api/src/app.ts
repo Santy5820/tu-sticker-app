@@ -7,6 +7,7 @@ import v1Routes from "./api/v1/index";
 import { setupSwagger } from "./config/swagger";
 import { notFound, errorHandler } from "./shared/middlewares/errorHandler";
 import { validateRequestBody } from "./shared/middlewares/requestValidation";
+import { productImageUploadDirectory } from "./modules/products/product-image-upload.middleware";
 
 export const app = express();
 
@@ -17,6 +18,17 @@ app.use(compression());
 app.use(helmet());
 app.use(morgan("dev"));
 setupSwagger(app);
+app.use(
+    "/uploads/products",
+    (_req, res, next) => {
+        res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+        next();
+    },
+    express.static(productImageUploadDirectory, {
+        immutable: true,
+        maxAge: "1y",
+    }),
+);
 
 // Health check
 app.get("/health", (_req, res) => {

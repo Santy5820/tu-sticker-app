@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { Cart } from '../../../core/models/api';
 import { AuthService } from '../../../core/services/auth.service';
@@ -57,11 +57,13 @@ export class CartPageComponent implements OnInit {
         private readonly orderService: OrderService,
         private readonly router: Router,
         public readonly authService: AuthService,
+        private readonly changeDetector: ChangeDetectorRef,
     ) { }
 
     ngOnInit(): void {
         this.cartService.getCart().subscribe((cart) => {
             this.cart = cart;
+            this.changeDetector.markForCheck();
         });
     }
 

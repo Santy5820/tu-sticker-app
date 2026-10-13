@@ -41,6 +41,8 @@ export interface Product {
     images: string[];
     isActive: boolean;
     isCustomizable: boolean;
+    customizationSelectionMode?: 'single' | 'multiple';
+    customizations?: ProductCustomization[];
     inventoryManaged?: boolean;
     stock?: number | null;
     stockAlertThreshold?: number;
@@ -49,12 +51,43 @@ export interface Product {
     updatedAt?: string;
 }
 
+export type ProductCustomizationInputType = 'none' | 'text' | 'file';
+
+export interface ProductCustomization {
+    name: string;
+    value: number;
+    inputType: ProductCustomizationInputType;
+    required: boolean;
+}
+
 export interface ProductCreateRequest {
     name: string;
     description: string;
     price: number;
     category: string;
+    images?: string[];
     isCustomizable: boolean;
+    customizationSelectionMode?: 'single' | 'multiple';
+    customizations?: ProductCustomization[];
+}
+
+export interface ProductUpdateRequest {
+    name?: string;
+    description?: string;
+    price?: number;
+    category?: string;
+    images?: string[];
+    isActive?: boolean;
+    isCustomizable?: boolean;
+    customizationSelectionMode?: 'single' | 'multiple';
+    customizations?: ProductCustomization[];
+    inventoryManaged?: boolean;
+    stockAlertThreshold?: number;
+    requiresSupplierFallback?: boolean;
+}
+
+export interface ProductImageUploadResponse {
+    images: string[];
 }
 
 export interface Category {

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { Order } from '../../../core/models/api';
 import { OrderService } from '../../../core/services/order.service';
 
@@ -35,11 +35,15 @@ import { OrderService } from '../../../core/services/order.service';
 export class OrdersPageComponent implements OnInit {
     orders: Order[] = [];
 
-    constructor(private readonly orderService: OrderService) { }
+    constructor(
+        private readonly orderService: OrderService,
+        private readonly changeDetector: ChangeDetectorRef,
+    ) { }
 
     ngOnInit(): void {
         this.orderService.list().subscribe((orders) => {
             this.orders = orders;
+            this.changeDetector.markForCheck();
         });
     }
 }

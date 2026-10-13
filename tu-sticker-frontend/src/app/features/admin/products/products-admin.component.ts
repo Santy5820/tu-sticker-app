@@ -1,13 +1,14 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Category, Product, ProductCreateRequest } from '../../../core/models/api';
+import { RouterLink } from '@angular/router';
+import { Product } from '../../../core/models/api';
 import { AdminService } from '../../../core/services/admin.service';
 
 @Component({
     selector: 'app-products-admin',
     standalone: true,
-    imports: [CommonModule, FormsModule],
+    imports: [CommonModule, FormsModule, RouterLink],
     template: `
     <section class="page">
       <div class="page-heading">
@@ -15,53 +16,9 @@ import { AdminService } from '../../../core/services/admin.service';
           <h1>Productos</h1>
           <p>Gestiona el catálogo, los precios y la disponibilidad.</p>
         </div>
-        <button type="button" class="primary-button" (click)="openCreateForm()">Añadir productos</button>
+        <a class="primary-button" routerLink="/admin/products/new">Añadir productos</a>
       </div>
 
-      <form *ngIf="showCreateForm" class="create-form" (ngSubmit)="createProduct()">
-        <div class="form-heading">
-          <h2>Nuevo producto</h2>
-          <button type="button" class="close-button" aria-label="Cerrar formulario" (click)="showCreateForm = false">×</button>
-        </div>
-
-        <p class="error" *ngIf="formError">{{ formError }}</p>
-        <p class="muted" *ngIf="!categories.length">No hay categorías activas disponibles para asignar al producto.</p>
-
-        <div class="form-grid">
-          <label>
-            Nombre
-            <input name="name" [(ngModel)]="draft.name" required maxlength="120" />
-          </label>
-          <label>
-            Categoría
-            <select name="category" [(ngModel)]="draft.category" required>
-              <option value="" disabled>Selecciona una categoría</option>
-              <option *ngFor="let category of categories" [value]="category.slug">{{ category.name }}</option>
-            </select>
-          </label>
-          <label>
-            Precio (COP)
-            <input name="price" type="number" [(ngModel)]="draft.price" required min="1" step="1" />
-          </label>
-          <label class="checkbox-label">
-            <input name="isCustomizable" type="checkbox" [(ngModel)]="draft.isCustomizable" />
-            Producto personalizable
-          </label>
-          <label class="full-width">
-            Descripción
-            <textarea name="description" [(ngModel)]="draft.description" required rows="3"></textarea>
-          </label>
-        </div>
-
-        <div class="form-actions">
-          <button type="button" class="secondary-button" (click)="showCreateForm = false">Cancelar</button>
-          <button type="submit" class="primary-button" [disabled]="saving || !categories.length">
-            {{ saving ? 'Guardando…' : 'Guardar producto' }}
-          </button>
-        </div>
-      </form>
-
-      <p class="error" *ngIf="loadError">{{ loadError }}</p>
       <p class="error" *ngIf="productsError">{{ productsError }}</p>
 
       <section class="panel" aria-label="Listado de productos">
@@ -106,6 +63,7 @@ import { AdminService } from '../../../core/services/admin.service';
                     <th>Precio</th>
                     <th>Inventario</th>
                     <th>Estado</th>
+                    <th>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -122,6 +80,15 @@ import { AdminService } from '../../../core/services/admin.service';
                         {{ product.isActive ? 'Activo' : 'Inactivo' }}
                       </span>
                     </td>
+                    <td class="actions-cell">
+                      <a class="edit-button" [routerLink]="['/admin/products', product.slug]"
+                        [attr.aria-label]="'Editar ' + product.name" title="Editar producto">
+                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                          <path d="M12 20h9"></path>
+                          <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"></path>
+                        </svg>
+                      </a>
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -133,30 +100,31 @@ import { AdminService } from '../../../core/services/admin.service';
             </div>
           </ng-container>
         </ng-container>
+
       </section>
     </section>
   `,
     styles: [`
       :host { display: block; }
       .page { max-width: 1200px; margin: 0 auto; padding: 2rem; }
-      .page-heading, .form-heading, .form-actions, .list-footer { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+      .page-heading, .list-footer { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
       h1, h2, p { margin-top: 0; }
       .page-heading p, .muted { color: #64748b; }
-      .panel, .create-form { margin-top: 1.5rem; padding: 1.25rem; border: 1px solid #e2e8f0; border-radius: 16px; background: #fff; }
-      .create-form { display: grid; gap: 1rem; background: #f8fafc; }
-      .form-heading h2 { margin: 0; }
-      .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
-      label { display: grid; gap: .45rem; color: #334155; font-size: .9rem; font-weight: 600; }
-      input, select, textarea { width: 100%; box-sizing: border-box; padding: .7rem .8rem; border: 1px solid #cbd5e1; border-radius: 8px; background: white; color: #0f172a; font: inherit; }
-      .checkbox-label { display: flex; align-items: center; align-self: end; min-height: 42px; }
-      .checkbox-label input { width: auto; }
-      .full-width { grid-column: 1 / -1; }
+      .panel { margin-top: 1.5rem; padding: 1.25rem; border: 1px solid #e2e8f0; border-radius: 16px; background: #fff; }
       button { border: 0; border-radius: 8px; padding: .7rem 1rem; font: inherit; font-weight: 700; cursor: pointer; }
-      button:disabled { cursor: wait; opacity: .65; }
-      .primary-button { background: #c2410c; color: white; }
+      .primary-button { display: inline-block; border-radius: 8px; padding: .7rem 1rem; background: #c2410c; color: white; font: inherit; font-weight: 700; text-decoration: none; }
       .secondary-button { background: #e2e8f0; color: #0f172a; }
-      .close-button { background: transparent; color: #475569; font-size: 1.5rem; }
-      .filters { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(150px, .45fr) minmax(140px, .35fr); gap: 1rem; margin-bottom: 1.25rem; }
+      a.secondary-button { display: inline-block; text-decoration: none; white-space: nowrap; }
+      .actions-cell { width: 1%; white-space: nowrap; }
+      .edit-button { display: inline-grid; width: 36px; height: 36px; place-items: center; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; color: #475569; text-decoration: none; transition: background .15s ease, color .15s ease, border-color .15s ease; }
+      .edit-button:hover { border-color: #fed7aa; background: #fff7ed; color: #c2410c; }
+      .edit-button:focus-visible { outline: 2px solid #c2410c; outline-offset: 2px; }
+      .edit-button svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+      .filters { display: grid; grid-template-columns: minmax(240px, 1fr) minmax(170px, .45fr) minmax(160px, .35fr); gap: 1rem; margin-bottom: 1.5rem; padding: 1rem; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; }
+      .filters label { display: grid; align-content: start; gap: .45rem; color: #475569; font-size: .8rem; font-weight: 700; }
+      .filters input, .filters select { width: 100%; min-height: 42px; box-sizing: border-box; padding: .65rem .8rem; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; color: #0f172a; font: inherit; font-size: .9rem; transition: border-color .15s ease, box-shadow .15s ease; }
+      .filters input::placeholder { color: #94a3b8; }
+      .filters input:focus, .filters select:focus { border-color: #f97316; outline: none; box-shadow: 0 0 0 3px rgb(249 115 22 / 15%); }
       .search-field { min-width: 0; }
       .table-scroll { overflow-x: auto; }
       table { width: 100%; border-collapse: collapse; text-align: left; }
@@ -172,39 +140,27 @@ import { AdminService } from '../../../core/services/admin.service';
       @media (max-width: 700px) {
         .page { padding: 1.25rem; }
         .page-heading { align-items: flex-start; }
-        .filters, .form-grid { grid-template-columns: 1fr; }
-        .full-width { grid-column: auto; }
+        .filters { grid-template-columns: 1fr; }
         .list-footer { align-items: flex-start; flex-direction: column; }
       }
     `],
 })
 export class ProductsAdminComponent implements OnInit {
     products: Product[] = [];
-    categories: Category[] = [];
     loading = true;
-    saving = false;
-    showCreateForm = false;
-    loadError = '';
     productsError = '';
-    formError = '';
     searchTerm = '';
     selectedCategory = 'all';
     selectedStatus = 'all';
     visibleCount = 6;
-    draft: ProductCreateRequest = this.emptyDraft();
 
-    constructor(private readonly adminService: AdminService) { }
+    constructor(
+        private readonly adminService: AdminService,
+        private readonly changeDetector: ChangeDetectorRef,
+    ) { }
 
     ngOnInit(): void {
         this.loadProducts();
-        this.adminService.getCategories().subscribe({
-            next: (categories) => {
-                this.categories = categories.filter((category) => category.isActive);
-            },
-            error: () => {
-                this.loadError = 'No se pudieron cargar las categorías. Intenta recargar la página.';
-            },
-        });
     }
 
     get productCategories(): string[] {
@@ -231,42 +187,6 @@ export class ProductsAdminComponent implements OnInit {
         this.visibleCount += 6;
     }
 
-    openCreateForm(): void {
-        this.formError = '';
-        this.draft = this.emptyDraft();
-        this.showCreateForm = true;
-    }
-
-    createProduct(): void {
-        if (!this.draft.name.trim() || !this.draft.description.trim()
-            || !this.draft.category || !Number.isFinite(this.draft.price) || this.draft.price <= 0) {
-            this.formError = 'Completa los campos obligatorios e indica un precio mayor que cero.';
-            return;
-        }
-
-        this.saving = true;
-        this.formError = '';
-        this.adminService.createProduct({
-            ...this.draft,
-            name: this.draft.name.trim(),
-            description: this.draft.description.trim(),
-        }).subscribe({
-            next: (product) => {
-                this.products = [product, ...this.products];
-                this.visibleCount = Math.max(6, this.visibleCount);
-                this.searchTerm = '';
-                this.selectedCategory = 'all';
-                this.selectedStatus = 'all';
-                this.showCreateForm = false;
-                this.saving = false;
-            },
-            error: () => {
-                this.formError = 'No se pudo guardar el producto. Verifica los datos y los permisos de tu cuenta.';
-                this.saving = false;
-            },
-        });
-    }
-
     private loadProducts(): void {
         this.loading = true;
         this.productsError = '';
@@ -274,21 +194,14 @@ export class ProductsAdminComponent implements OnInit {
             next: (products) => {
                 this.products = products;
                 this.loading = false;
+                this.changeDetector.markForCheck();
             },
             error: () => {
                 this.productsError = 'No se pudieron cargar los productos. Intenta recargar la página.';
                 this.loading = false;
+                this.changeDetector.markForCheck();
             },
         });
     }
 
-    private emptyDraft(): ProductCreateRequest {
-        return {
-            name: '',
-            description: '',
-            price: 1,
-            category: '',
-            isCustomizable: false,
-        };
-    }
 }
