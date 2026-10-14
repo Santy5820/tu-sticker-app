@@ -6,6 +6,7 @@ import { PaymentsController } from "./payments.controller";
 const router = Router();
 const paymentsController = new PaymentsController();
 
+router.get("/availability", asyncHandler(paymentsController.availability));
 router.post("/webhooks/wompi", asyncHandler(paymentsController.wompiWebhook));
 router.post(
     "/orders/:orderId/checkout",

@@ -17,6 +17,19 @@ export class PaymentsService {
     private readonly paymentsRepository = new PaymentsRepository();
     private readonly ordersRepository = new OrdersRepository();
 
+    getCheckoutAvailability(): {
+        wompi: boolean;
+        whatsappDeposit: boolean;
+        whatsappNumber: string | null;
+    } {
+        const whatsappNumber = env.whatsappAdvisorNumber.replace(/\D/g, "");
+        return {
+            wompi: env.wompiEnabled && Boolean(env.wompiPublicKey && env.wompiIntegritySecret),
+            whatsappDeposit: Boolean(whatsappNumber),
+            whatsappNumber: whatsappNumber || null,
+        };
+    }
+
     async createWompiCheckout(
         orderId: string,
         userId: string,
@@ -34,8 +47,11 @@ export class PaymentsService {
         if (order.status !== "PENDING_PAYMENT") {
             throw new BadRequestError("El pedido no está disponible para pago");
         }
+        if (order.paymentMethod && order.paymentMethod !== "WOMPI") {
+            throw new BadRequestError("Este pedido fue creado para gestionar el abono por WhatsApp");
+        }
 
-        const amountInCents = Math.round(order.total * 100);
+        const amountInCents = Math.round((order.amountDueNow ?? order.total) * 100);
         if (!Number.isInteger(amountInCents) || amountInCents <= 0) {
             throw new BadRequestError("El total del pedido no es válido para Wompi");
         }
@@ -133,7 +149,12 @@ export class PaymentsService {
         if (!updatedPayment) throw new NotFoundError("Pago no encontrado");
 
         const order = await this.ordersRepository.findById(payment.orderId);
-        if (order) {
+        const paymentStillMatchesOrder = order &&
+            order.status === "PENDING_PAYMENT" &&
+            order.paymentStatus === "PENDING" &&
+            (order.paymentMethod ?? "WOMPI") === "WOMPI" &&
+            Math.round((order.amountDueNow ?? order.total) * 100) === payment.amountInCents;
+        if (order && paymentStillMatchesOrder) {
             const nextPaymentStatus = status === "APPROVED" ? "PAID" : "CANCELLED";
             const nextOrderStatus =
                 status === "APPROVED" && order.status === "PENDING_PAYMENT"

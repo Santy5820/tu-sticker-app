@@ -20,19 +20,19 @@ export class CartController {
         res.status(200).json(cart);
     };
 
-    updateItem = async (req: Request<{ productId: string }>, res: Response): Promise<void> => {
+    updateItem = async (req: Request<{ itemId: string }>, res: Response): Promise<void> => {
         const owner = this.getOwner(req, res);
         const cart = await this.cartService.updateItem(
             owner,
-            req.params.productId,
+            req.params.itemId,
             req.body as UpdateCartItemInput
         );
         res.status(200).json(cart);
     };
 
-    removeItem = async (req: Request<{ productId: string }>, res: Response): Promise<void> => {
+    removeItem = async (req: Request<{ itemId: string }>, res: Response): Promise<void> => {
         const owner = this.getOwner(req, res);
-        const cart = await this.cartService.removeItem(owner, req.params.productId);
+        const cart = await this.cartService.removeItem(owner, req.params.itemId);
         res.status(200).json(cart);
     };
 

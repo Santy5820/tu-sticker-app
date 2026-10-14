@@ -15,6 +15,12 @@ router.get(
     asyncHandler(ordersController.findAll)
 );
 router.patch(
+    "/admin/:id",
+    authMiddleware,
+    requireRoles("ADMIN"),
+    asyncHandler(ordersController.updateAdmin)
+);
+router.patch(
     "/:id/status",
     authMiddleware,
     requireRoles("ADMIN", "SALES", "PRODUCTION"),

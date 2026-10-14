@@ -3,6 +3,7 @@ import { ChangeDetectorRef, Component } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { ApiError } from '../../../core/models/api';
 
 @Component({
     selector: 'app-register',
@@ -83,9 +84,9 @@ export class RegisterComponent {
 
         this.authService.register(this.form.getRawValue()).subscribe({
             next: () => this.router.navigateByUrl(this.returnUrl),
-            error: () => {
+            error: (error: { error?: ApiError }) => {
                 this.loading = false;
-                this.errorMessage = 'No se pudo crear la cuenta o recuperar tu carrito. Inténtalo nuevamente.';
+                this.errorMessage = error.error?.message ?? 'No se pudo crear la cuenta. Verifica los datos e inténtalo nuevamente.';
                 this.changeDetector.markForCheck();
             },
             complete: () => {

@@ -11,6 +11,56 @@ export interface UserPublic {
     updatedAt: string;
 }
 
+export interface UserCreateRequest {
+    name: string;
+    email: string;
+    password: string;
+    role: UserRole;
+    customerId?: string;
+    isActive: boolean;
+}
+
+export interface UserUpdateRequest {
+    name?: string;
+    email?: string;
+    password?: string;
+    role?: UserRole;
+    customerId?: string;
+    isActive?: boolean;
+}
+
+export interface CustomerAdmin {
+    _id: string;
+    userId?: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone?: string;
+    isActive: boolean;
+}
+
+export interface CustomerAddress {
+    alias?: string;
+    street: string;
+    city: string;
+    state: string;
+    postalCode?: string;
+    country: string;
+    isDefault?: boolean;
+}
+
+export interface CustomerProfile {
+    _id: string;
+    userId?: string;
+    firstName: string;
+    lastName: string;
+    fullName?: string;
+    email: string;
+    phone?: string;
+    addresses: CustomerAddress[];
+    isActive: boolean;
+}
+
 export interface AuthResponse {
     user: UserPublic;
     token: string;
@@ -108,11 +158,14 @@ export interface CategoryWriteRequest {
 
 export interface CartItem {
     productId: string;
+    lineId?: string;
     productName: string;
     productSlug: string;
     quantity: number;
     unitPrice: number;
     subtotal: number;
+    customizationIds?: number[];
+    customizations?: Array<{ index: number; name: string; value: number }>;
 }
 
 export interface Cart {
@@ -124,6 +177,30 @@ export interface Cart {
     total: number;
     createdAt: string;
     updatedAt: string;
+}
+
+export type OrderPaymentMethod = 'WOMPI' | 'WHATSAPP_DEPOSIT';
+
+export interface PaymentAvailability {
+    wompi: boolean;
+    whatsappDeposit: boolean;
+    whatsappNumber: string | null;
+}
+
+export interface OrderCreateRequest {
+    addressIndex?: number;
+    address?: Partial<OrderAddress>;
+    saveAddress?: boolean;
+    paymentMethod: OrderPaymentMethod;
+}
+
+export interface WompiCheckoutResponse {
+    payment: unknown;
+    checkout: {
+        url: string;
+        method: 'GET';
+        fields: Record<string, string>;
+    };
 }
 
 export interface OrderAddress {
@@ -146,6 +223,7 @@ export interface OrderItem {
     quantity: number;
     unitPrice: number;
     subtotal: number;
+    customizations?: Array<{ name: string; value: number }>;
 }
 
 export interface Order {
@@ -157,10 +235,27 @@ export interface Order {
     address: OrderAddress;
     subtotal: number;
     total: number;
+    paymentMethod?: OrderPaymentMethod;
+    amountDueNow?: number;
     status: 'PENDING_PAYMENT' | 'CONFIRMED' | 'IN_PRODUCTION' | 'READY' | 'DELIVERED' | 'CANCELLED';
-    paymentStatus: 'PENDING' | 'APPROVED' | 'DECLINED' | 'VOIDED' | 'ERROR';
+    paymentStatus: 'PENDING' | 'PAID' | 'CANCELLED';
     createdAt: string;
     updatedAt: string;
+}
+
+export interface OrderAdminUpdateRequest {
+    customerId: string;
+    items: Array<{
+        productId: string;
+        quantity: number;
+        unitPrice: number;
+        customizations: Array<{ name: string; value: number }>;
+    }>;
+    address: OrderAddress;
+    paymentMethod: OrderPaymentMethod;
+    amountDueNow: number;
+    status: Order['status'];
+    paymentStatus: Order['paymentStatus'];
 }
 
 export interface ApiError {

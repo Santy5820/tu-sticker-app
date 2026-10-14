@@ -50,6 +50,13 @@ export class CustomersRepository {
         return result ?? null;
     }
 
+    async clearUserAssociation(id: ObjectId): Promise<void> {
+        await this.collection().updateOne(
+            { _id: id },
+            { $unset: { userId: "" }, $set: { updatedAt: new Date() } }
+        );
+    }
+
     async delete(id: ObjectId): Promise<boolean> {
         const result = await this.collection().updateOne(
             { _id: id },

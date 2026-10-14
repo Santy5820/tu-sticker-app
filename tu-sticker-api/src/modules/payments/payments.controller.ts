@@ -7,6 +7,10 @@ import { PaymentsService } from "./payments.service";
 export class PaymentsController {
     private readonly paymentsService = new PaymentsService();
 
+    availability = async (_req: Request, res: Response): Promise<void> => {
+        res.status(200).json(this.paymentsService.getCheckoutAvailability());
+    };
+
     createCheckout = async (req: Request<{ orderId: string }>, res: Response): Promise<void> => {
         const user = this.getUser(req);
         const result = await this.paymentsService.createWompiCheckout(

@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { Category, CategoryWriteRequest, Product, ProductCreateRequest, ProductImageUploadResponse, ProductUpdateRequest } from '../models/api';
+import { Category, CategoryWriteRequest, CustomerAdmin, Product, ProductCreateRequest, ProductImageUploadResponse, ProductUpdateRequest, UserCreateRequest, UserPublic, UserUpdateRequest } from '../models/api';
 
 @Injectable({ providedIn: 'root' })
 export class AdminService {
@@ -16,6 +16,30 @@ export class AdminService {
 
     getProducts(): Observable<Product[]> {
         return this.http.get<Product[]>(`${this.apiUrl}/products`);
+    }
+
+    getUsers(): Observable<UserPublic[]> {
+        return this.http.get<UserPublic[]>(`${this.apiUrl}/users`);
+    }
+
+    getUser(id: string): Observable<UserPublic> {
+        return this.http.get<UserPublic>(`${this.apiUrl}/users/${id}`);
+    }
+
+    createUser(user: UserCreateRequest): Observable<UserPublic> {
+        return this.http.post<UserPublic>(`${this.apiUrl}/users`, user);
+    }
+
+    updateUser(id: string, user: UserUpdateRequest): Observable<UserPublic> {
+        return this.http.patch<UserPublic>(`${this.apiUrl}/users/${id}`, user);
+    }
+
+    deleteUser(id: string): Observable<void> {
+        return this.http.delete<void>(`${this.apiUrl}/users/${id}`);
+    }
+
+    getActiveCustomers(): Observable<CustomerAdmin[]> {
+        return this.http.get<CustomerAdmin[]>(`${this.apiUrl}/customers/active`);
     }
 
     getCategories(): Observable<Category[]> {

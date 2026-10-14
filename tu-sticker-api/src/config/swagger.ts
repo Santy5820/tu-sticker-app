@@ -8,6 +8,8 @@ const serverUrl = process.env.API_BASE_URL || process.env.APP_URL || `http://loc
 const userRoles = ["CUSTOMER", "ADMIN", "SALES", "DESIGNER", "PRODUCTION"] as const;
 const orderStatuses = ["PENDING_PAYMENT", "CONFIRMED", "IN_PRODUCTION", "READY", "DELIVERED", "CANCELLED"] as const;
 const paymentStatuses = ["PENDING", "APPROVED", "DECLINED", "VOIDED", "ERROR"] as const;
+const orderPaymentStatuses = ["PENDING", "PAID", "CANCELLED"] as const;
+const orderPaymentMethods = ["WOMPI", "WHATSAPP_DEPOSIT"] as const;
 const inventoryMovementTypes = ["IN", "OUT", "ADJUSTMENT"] as const;
 const productionStatuses = [
     "PENDING",
@@ -479,11 +481,25 @@ export const swaggerSpec = swaggerJsdoc({
                     required: ["productId", "productName", "productSlug", "quantity", "unitPrice", "subtotal"],
                     properties: {
                         productId: { type: "string" },
+                        lineId: { type: "string", description: "Identifica una línea de producto y sus opciones seleccionadas" },
                         productName: { type: "string" },
                         productSlug: { type: "string" },
                         quantity: { type: "integer", minimum: 1 },
                         unitPrice: { type: "number" },
                         subtotal: { type: "number" },
+                        customizationIds: { type: "array", items: { type: "integer", minimum: 0 } },
+                        customizations: {
+                            type: "array",
+                            items: {
+                                type: "object",
+                                required: ["index", "name", "value"],
+                                properties: {
+                                    index: { type: "integer", minimum: 0 },
+                                    name: { type: "string" },
+                                    value: { type: "number" },
+                                },
+                            },
+                        },
                     },
                 },
                 Cart: {
@@ -506,10 +522,12 @@ export const swaggerSpec = swaggerJsdoc({
                     properties: {
                         productId: { type: "string" },
                         quantity: { type: "integer", minimum: 1 },
+                        customizationIds: { type: "array", items: { type: "integer", minimum: 0 } },
                     },
                     example: {
                         productId: "66d7b31c5f4d0d8d9773f0ae",
-                        quantity: 2
+                        quantity: 2,
+                        customizationIds: [],
                     },
                 },
                 UpdateCartItemRequest: {
@@ -545,6 +563,17 @@ export const swaggerSpec = swaggerJsdoc({
                         quantity: { type: "integer", minimum: 1 },
                         unitPrice: { type: "number" },
                         subtotal: { type: "number" },
+                        customizations: {
+                            type: "array",
+                            items: {
+                                type: "object",
+                                required: ["name", "value"],
+                                properties: {
+                                    name: { type: "string" },
+                                    value: { type: "number" },
+                                },
+                            },
+                        },
                     },
                 },
                 Order: {
@@ -559,39 +588,86 @@ export const swaggerSpec = swaggerJsdoc({
                         address: { $ref: "#/components/schemas/OrderAddress" },
                         subtotal: { type: "number" },
                         total: { type: "number" },
+                        paymentMethod: { type: "string", enum: orderPaymentMethods },
+                        amountDueNow: { type: "number", description: "Total a pagar o abonar ahora; para WhatsApp corresponde al 50% del pedido" },
                         status: { type: "string", enum: orderStatuses },
-                        paymentStatus: { type: "string", enum: paymentStatuses },
+                        paymentStatus: { type: "string", enum: orderPaymentStatuses },
                         createdAt: { type: "string", format: "date-time" },
                         updatedAt: { type: "string", format: "date-time" },
                     },
                 },
                 OrderCreateRequest: {
                     type: "object",
+                    description: "Provide either a saved address index or a new address. The payment method defaults to WOMPI.",
+                    anyOf: [{ required: ["addressIndex"] }, { required: ["address"] }],
                     properties: {
                         addressIndex: { type: "integer", minimum: 0 },
-                        address: { $ref: "#/components/schemas/OrderAddress" },
+                        address: {
+                            type: "object",
+                            required: ["street", "city", "state", "country"],
+                            properties: {
+                                alias: { type: "string" },
+                                street: { type: "string" },
+                                city: { type: "string" },
+                                state: { type: "string" },
+                                postalCode: { type: "string" },
+                                country: { type: "string" },
+                            },
+                        },
                         saveAddress: { type: "boolean" },
+                        paymentMethod: { type: "string", enum: orderPaymentMethods },
                     },
                     example: {
                         address: {
-                            firstName: "Ana",
-                            lastName: "Pérez",
-                            email: "ana@example.com",
-                            phone: "+57 300 000 0000",
-                            alias: "Casa",
                             street: "Calle 10 # 20-30",
                             city: "Bogotá",
                             state: "Cundinamarca",
                             postalCode: "110111",
                             country: "Colombia"
                         },
-                        saveAddress: true
+                        saveAddress: true,
+                        paymentMethod: "WOMPI"
+                    },
+                },
+                PaymentAvailability: {
+                    type: "object",
+                    required: ["wompi", "whatsappDeposit", "whatsappNumber"],
+                    properties: {
+                        wompi: { type: "boolean" },
+                        whatsappDeposit: { type: "boolean" },
+                        whatsappNumber: { type: ["string", "null"] },
                     },
                 },
                 OrderStatusUpdateRequest: {
                     type: "object",
                     properties: {
                         status: { type: "string", enum: orderStatuses },
+                    },
+                },
+                OrderAdminUpdateRequest: {
+                    type: "object",
+                    required: ["customerId", "items", "address", "paymentMethod", "amountDueNow", "status", "paymentStatus"],
+                    properties: {
+                        customerId: { type: "string", description: "ID de un cliente activo con cuenta asociada" },
+                        items: {
+                            type: "array",
+                            minItems: 1,
+                            items: {
+                                type: "object",
+                                required: ["productId", "quantity", "unitPrice"],
+                                properties: {
+                                    productId: { type: "string" },
+                                    quantity: { type: "integer", minimum: 1 },
+                                    unitPrice: { type: "number", minimum: 0 },
+                                    customizations: { type: "array", items: { type: "object", required: ["name", "value"], properties: { name: { type: "string" }, value: { type: "number", minimum: 0 } } } },
+                                },
+                            },
+                        },
+                        address: { $ref: "#/components/schemas/OrderAddress" },
+                        paymentMethod: { type: "string", enum: orderPaymentMethods },
+                        amountDueNow: { type: "number", minimum: 0 },
+                        status: { type: "string", enum: orderStatuses },
+                        paymentStatus: { type: "string", enum: orderPaymentStatuses },
                     },
                 },
                 Payment: {
@@ -1397,11 +1473,11 @@ export const swaggerSpec = swaggerJsdoc({
                     },
                 },
             },
-            "/api/v1/cart/items/{productId}": {
+            "/api/v1/cart/items/{itemId}": {
                 patch: {
                     tags: ["Cart"],
-                    summary: "Actualizar cantidad de un producto del carrito",
-                    parameters: [{ in: "path", name: "productId", required: true, schema: { type: "string" }, description: "ObjectId del producto" }],
+                    summary: "Actualizar cantidad de una línea del carrito",
+                    parameters: [{ in: "path", name: "itemId", required: true, schema: { type: "string" }, description: "Identificador de línea devuelto por el carrito" }],
                     requestBody: {
                         required: true,
                         content: { "application/json": { schema: { $ref: "#/components/schemas/UpdateCartItemRequest" } } },
@@ -1415,8 +1491,8 @@ export const swaggerSpec = swaggerJsdoc({
                 },
                 delete: {
                     tags: ["Cart"],
-                    summary: "Quitar producto del carrito",
-                    parameters: [{ in: "path", name: "productId", required: true, schema: { type: "string" }, description: "ObjectId del producto" }],
+                    summary: "Quitar una línea del carrito",
+                    parameters: [{ in: "path", name: "itemId", required: true, schema: { type: "string" }, description: "Identificador de línea devuelto por el carrito" }],
                     responses: {
                         "200": { description: "Producto removido", content: { "application/json": { schema: { $ref: "#/components/schemas/Cart" } } } },
                         "404": errorResponse,
@@ -1475,10 +1551,38 @@ export const swaggerSpec = swaggerJsdoc({
                     summary: "Listar pedidos administrativos",
                     security: [{ bearerAuth: [] }],
                     description: "Requiere JWT con rol ADMIN, SALES o PRODUCTION.",
+                    parameters: [
+                        { in: "query", name: "status", schema: { type: "string", enum: orderStatuses }, description: "Filtrar por estado del pedido" },
+                        { in: "query", name: "name", schema: { type: "string" }, description: "Buscar por nombre o apellido del cliente" },
+                        { in: "query", name: "month", schema: { type: "string", pattern: "^\\d{4}-(0[1-9]|1[0-2])$" }, description: "Mes en formato YYYY-MM" },
+                        { in: "query", name: "from", schema: { type: "string", format: "date" }, description: "Fecha inicial inclusiva" },
+                        { in: "query", name: "to", schema: { type: "string", format: "date" }, description: "Fecha final inclusiva" },
+                    ],
                     responses: {
                         "200": { description: "Listado administrativo de pedidos", content: { "application/json": { schema: { type: "array", items: { $ref: "#/components/schemas/Order" } } } } },
                         "401": errorResponse,
                         "403": errorResponse,
+                        "500": errorResponse,
+                    },
+                },
+            },
+            "/api/v1/orders/admin/{id}": {
+                patch: {
+                    tags: ["Orders"],
+                    summary: "Editar manualmente un pedido",
+                    security: [{ bearerAuth: [] }],
+                    description: "Requiere JWT con rol ADMIN. Cambiar productos o cantidades ajusta el inventario; los cambios de estado y pago son manuales.",
+                    parameters: [{ in: "path", name: "id", required: true, schema: { type: "string" }, description: "ObjectId del pedido" }],
+                    requestBody: {
+                        required: true,
+                        content: { "application/json": { schema: { $ref: "#/components/schemas/OrderAdminUpdateRequest" } } },
+                    },
+                    responses: {
+                        "200": { description: "Pedido actualizado", content: { "application/json": { schema: { $ref: "#/components/schemas/Order" } } } },
+                        "400": errorResponse,
+                        "401": errorResponse,
+                        "403": errorResponse,
+                        "404": errorResponse,
                         "500": errorResponse,
                     },
                 },
@@ -1533,6 +1637,19 @@ export const swaggerSpec = swaggerJsdoc({
                         "401": errorResponse,
                         "403": errorResponse,
                         "404": errorResponse,
+                        "500": errorResponse,
+                    },
+                },
+            },
+            "/api/v1/payments/availability": {
+                get: {
+                    tags: ["Payments"],
+                    summary: "Consultar métodos de pago disponibles",
+                    responses: {
+                        "200": {
+                            description: "Disponibilidad de Wompi y del abono por WhatsApp",
+                            content: { "application/json": { schema: { $ref: "#/components/schemas/PaymentAvailability" } } },
+                        },
                         "500": errorResponse,
                     },
                 },

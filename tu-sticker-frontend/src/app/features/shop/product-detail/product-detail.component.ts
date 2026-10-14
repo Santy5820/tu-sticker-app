@@ -1,8 +1,9 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Product } from '../../../core/models/api';
+import { CartService } from '../../../core/services/cart.service';
 import { ProductService } from '../../../core/services/product.service';
 
 @Component({
@@ -86,10 +87,11 @@ import { ProductService } from '../../../core/services/product.service';
             </div>
           </div>
 
-          <button type="button" class="cart-button" disabled aria-disabled="true">
-            Añadir al carrito
+          <button type="button" class="cart-button" [disabled]="addingToCart" (click)="addToCart()">
+            {{ addingToCart ? 'Agregando…' : 'Añadir al carrito' }}
           </button>
-          <p class="muted cart-note">La compra estará disponible próximamente.</p>
+          <p class="cart-feedback" *ngIf="cartMessage" role="status">{{ cartMessage }}</p>
+          <p class="error" *ngIf="cartError" role="alert">{{ cartError }}</p>
         </div>
       </section>
     </main>
@@ -126,8 +128,9 @@ import { ProductService } from '../../../core/services/product.service';
       .total { display: grid; gap: .2rem; text-align: right; color: #475569; }
       .total strong { color: #0f172a; font-size: 1.6rem; }
       .cart-button { width: 100%; border: 0; border-radius: 10px; padding: 1rem 1.25rem; background: #c2410c; color: white; font: inherit; font-weight: 800; }
-      .cart-button:disabled { cursor: not-allowed; opacity: .65; }
-      .cart-note { text-align: center; }
+      .cart-button:disabled { cursor: wait; opacity: .65; }
+      .cart-feedback { margin: 0; color: #166534; text-align: center; }
+      .error { margin: 0; color: #b91c1c; text-align: center; }
       .state { padding: 2rem 0; color: #475569; }
       .error { color: #b91c1c; }
       @media (max-width: 760px) {
@@ -142,6 +145,9 @@ export class ProductDetailComponent implements OnInit {
     product: Product | null = null;
     loading = true;
     loadError = '';
+    cartError = '';
+    cartMessage = '';
+    addingToCart = false;
     selectedImageIndex = 0;
     quantity = 1;
     private readonly selectedCustomizationIndexes = new Set<number>();
@@ -149,6 +155,8 @@ export class ProductDetailComponent implements OnInit {
     constructor(
         private readonly route: ActivatedRoute,
         private readonly productService: ProductService,
+        private readonly cartService: CartService,
+        private readonly router: Router,
         private readonly changeDetector: ChangeDetectorRef,
     ) { }
 
@@ -240,5 +248,28 @@ export class ProductDetailComponent implements OnInit {
             return;
         }
         this.quantity = Math.floor(this.quantity);
+    }
+
+    addToCart(): void {
+        if (!this.product || this.addingToCart) return;
+        this.addingToCart = true;
+        this.cartError = '';
+        this.cartMessage = '';
+        this.cartService.addItem(
+            this.product._id,
+            this.quantity,
+            [...this.selectedCustomizationIndexes].sort((left, right) => left - right),
+        ).subscribe({
+            next: () => {
+                this.addingToCart = false;
+                this.cartMessage = 'Producto agregado al carrito.';
+                this.changeDetector.markForCheck();
+            },
+            error: (error: { error?: { message?: string } }) => {
+                this.addingToCart = false;
+                this.cartError = error.error?.message ?? 'No se pudo agregar el producto al carrito. Intenta nuevamente.';
+                this.changeDetector.markForCheck();
+            },
+        });
     }
 }

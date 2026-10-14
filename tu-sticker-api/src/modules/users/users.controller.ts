@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { UsersService } from "./users.service";
 import { sanitizeUser, sanitizeUsers } from "../../shared/security/userSanitizer";
+import { AuthRequest } from "../../shared/middlewares/auth.middleware";
 
 export class UsersController {
     private readonly usersService = new UsersService();
@@ -21,12 +22,14 @@ export class UsersController {
     };
 
     update = async (req: Request<{ id: string }>, res: Response): Promise<void> => {
-        const user = await this.usersService.update(req.params.id, req.body);
+        const actorId = (req as AuthRequest).user?.userId;
+        const user = await this.usersService.update(req.params.id, req.body, actorId);
         res.status(200).json(sanitizeUser(user));
     };
 
     delete = async (req: Request<{ id: string }>, res: Response): Promise<void> => {
-        await this.usersService.delete(req.params.id);
+        const actorId = (req as AuthRequest).user?.userId;
+        await this.usersService.delete(req.params.id, actorId);
         res.status(204).send();
     };
 }

@@ -58,6 +58,37 @@ export const authMiddleware = (req: Request, _res: Response, next: NextFunction)
     }
 };
 
+export const optionalAuthMiddleware = (req: Request, _res: Response, next: NextFunction): void => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        next();
+        return;
+    }
+    if (!authHeader.startsWith("Bearer ")) {
+        next(new UnauthorizedError("Token inválido"));
+        return;
+    }
+
+    const token = authHeader.split(" ")[1];
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+        next(new UnauthorizedError("JWT_SECRET no está configurado"));
+        return;
+    }
+
+    try {
+        const decoded = jwt.verify(token, secret);
+        if (!isAuthUserPayload(decoded)) {
+            next(new UnauthorizedError("El token no contiene un usuario válido"));
+            return;
+        }
+        (req as AuthRequest).user = decoded;
+        next();
+    } catch {
+        next(new UnauthorizedError("Token inválido o expirado"));
+    }
+};
+
 export const requireRoles = (...allowedRoles: UserRole[]) =>
     (req: Request, _res: Response, next: NextFunction): void => {
         const user = (req as AuthRequest).user;

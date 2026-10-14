@@ -31,10 +31,17 @@ export class UsersRepository {
         return this.collection().findOne({ email: email.toLowerCase() });
     }
 
-    async update(id: ObjectId, changes: Partial<User>): Promise<User | null> {
+    async update(id: ObjectId, changes: Partial<User>, unsetFields: (keyof User)[] = []): Promise<User | null> {
+        const unset: Record<string, ""> = {};
+        unsetFields.forEach((field) => {
+            unset[field] = "";
+        });
         const result = await this.collection().findOneAndUpdate(
             { _id: id },
-            { $set: { ...changes, updatedAt: new Date() } },
+            {
+                $set: { ...changes, updatedAt: new Date() },
+                ...(unsetFields.length ? { $unset: unset } : {}),
+            },
             { returnDocument: "after" }
         );
         return result ?? null;

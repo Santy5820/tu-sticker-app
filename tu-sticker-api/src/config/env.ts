@@ -26,4 +26,5 @@ export const env = {
     wompiIntegritySecret: process.env.WOMPI_INTEGRITY_SECRET,
     wompiEventsSecret: process.env.WOMPI_EVENTS_SECRET,
     wompiRedirectUrl: process.env.WOMPI_REDIRECT_URL,
+    whatsappAdvisorNumber: required("WHATSAPP_ADVISOR_NUMBER"),
 };

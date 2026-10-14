@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { Order, UserPublic } from '../../../core/models/api';
 import { filter } from 'rxjs';
 
 interface AdminNavigationItem {
@@ -187,11 +188,32 @@ export class AdminShellComponent implements OnInit {
             users: 'Usuarios',
         };
         this.section = labels[segments[0]] ?? '';
+        if (segments[0] === 'users' && segments.length > 1) {
+            this.section = 'Usuario';
+        }
         this.sectionPath = this.section ? `/admin/${segments[0]}` : '';
         if (segments.length > 1) {
-            this.detail = segments[1] === 'new'
-                ? 'Crear Producto'
-                : decodeURIComponent(segments[1]).replace(/-/g, ' ');
+            if (segments[0] === 'orders') {
+                const route = this.router.routerState.snapshot.root;
+                let deepestRoute = route;
+                while (deepestRoute.firstChild) {
+                    deepestRoute = deepestRoute.firstChild;
+                }
+                const order = deepestRoute.data['order'] as Order | undefined;
+                this.detail = order?.orderNumber ?? decodeURIComponent(segments[1]).replace(/-/g, ' ');
+            } else if (segments[0] === 'users' && segments[1] !== 'new') {
+                const route = this.router.routerState.snapshot.root;
+                let deepestRoute = route;
+                while (deepestRoute.firstChild) {
+                    deepestRoute = deepestRoute.firstChild;
+                }
+                const user = deepestRoute.data['user'] as UserPublic | undefined;
+                this.detail = user?.name ?? decodeURIComponent(segments[1]).replace(/-/g, ' ');
+            } else {
+                this.detail = segments[1] === 'new'
+                    ? 'Crear usuario'
+                    : decodeURIComponent(segments[1]).replace(/-/g, ' ');
+            }
         }
     }
 

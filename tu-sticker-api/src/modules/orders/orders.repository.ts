@@ -1,4 +1,4 @@
-import { Collection, ObjectId } from "mongodb";
+import { Collection, Filter, ObjectId } from "mongodb";
 import { getDb } from "../../config/database";
 import { Order, OrderStatus } from "./orders.model";
 
@@ -32,8 +32,40 @@ export class OrdersRepository {
         return this.collection().find({ userId }).sort({ createdAt: -1 }).toArray();
     }
 
-    async findAll(status?: OrderStatus): Promise<Order[]> {
-        const filter = status ? { status } : {};
+    async findAll(filters: {
+        status?: OrderStatus;
+        nameTerms?: string[];
+        createdFrom?: Date;
+        createdBefore?: Date;
+    } = {}): Promise<Order[]> {
+        const filter: Filter<Order> = {};
+        if (filters.status) {
+            filter.status = filters.status;
+        }
+
+        const clauses: Filter<Order>[] = [];
+        if (filters.createdFrom || filters.createdBefore) {
+            clauses.push({
+                createdAt: {
+                    ...(filters.createdFrom ? { $gte: filters.createdFrom } : {}),
+                    ...(filters.createdBefore ? { $lt: filters.createdBefore } : {}),
+                },
+            });
+        }
+        for (const term of filters.nameTerms ?? []) {
+            const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+            const expression = new RegExp(escapedTerm, "i");
+            clauses.push({
+                $or: [
+                    { "address.firstName": expression },
+                    { "address.lastName": expression },
+                ],
+            });
+        }
+        if (clauses.length) {
+            filter.$and = clauses;
+        }
+
         return this.collection().find(filter).sort({ createdAt: -1 }).toArray();
     }
 
@@ -45,6 +77,19 @@ export class OrdersRepository {
         const result = await this.collection().findOneAndUpdate(
             { _id: id },
             { $set: { status, paymentStatus, updatedAt: new Date() } },
+            { returnDocument: "after" }
+        );
+        return result ?? null;
+    }
+
+    async updateAdmin(
+        id: ObjectId,
+        expectedUpdatedAt: Date,
+        changes: Omit<Order, "_id" | "orderNumber" | "createdAt" | "updatedAt">
+    ): Promise<Order | null> {
+        const result = await this.collection().findOneAndUpdate(
+            { _id: id, updatedAt: expectedUpdatedAt },
+            { $set: { ...changes, updatedAt: new Date() } },
             { returnDocument: "after" }
         );
         return result ?? null;

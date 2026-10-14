@@ -3,6 +3,7 @@ import { ChangeDetectorRef, Component } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { ApiError } from '../../../core/models/api';
 
 @Component({
     selector: 'app-login',
@@ -76,9 +77,9 @@ export class LoginComponent {
 
         this.authService.login(this.form.getRawValue()).subscribe({
             next: () => this.router.navigateByUrl(this.returnUrl),
-            error: () => {
+            error: (error: { error?: ApiError }) => {
                 this.loading = false;
-                this.errorMessage = 'No se pudo iniciar sesión o recuperar tu carrito. Verifica tus credenciales e inténtalo nuevamente.';
+                this.errorMessage = error.error?.message ?? 'No se pudo iniciar sesión. Verifica tus credenciales e inténtalo nuevamente.';
                 this.changeDetector.markForCheck();
             },
             complete: () => {
